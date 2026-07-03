@@ -2,6 +2,8 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShoppingBag, Store, ShieldCheck, ArrowRight, ArrowLeft, User, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 type Role = 'shopper' | 'vendor' | 'admin'
 
@@ -40,6 +42,27 @@ const RegisterPage = () => {
   const [name,setName] = useState("")
   const [email,setEmail] = useState("")
   const [password,setPassword] = useState("")
+  const router = useRouter();
+  const [loading,setLoading] = useState(false)
+
+  const handleSignUp = async(e:React.FormEvent)=>{
+    e.preventDefault();
+    setLoading(true);
+    try{
+      const res = await axios.post("/api/auth/register",{name,email,password})
+      console.log(res.data)
+      setEmail("")
+      setName("")
+      setPassword("")
+      router.push("/login")
+
+    }catch(err){
+      console.log(err)
+
+    }finally{
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-orange-200 via-pink-100 to-purple-200 flex flex-col">
@@ -51,7 +74,7 @@ const RegisterPage = () => {
             Shopfinity
           </span>
         </div>
-        <button className="text-gray-700 font-medium">Sign in</button>
+        <button onClick={()=>router.push("/login")} className="text-gray-700 font-medium">Sign in</button>
       </div>
 
       {/* Step indicator */}
@@ -138,7 +161,7 @@ const RegisterPage = () => {
 
               <p className="mt-6 text-gray-500 text-sm">
                 Already have an account?{' '}
-                <span className="text-pink-600 font-medium cursor-pointer">Login →</span>
+                <span  onClick={()=>router.push("/login")} className="text-pink-600 font-medium cursor-pointer">Login →</span>
               </p>
             </motion.div>
           ) : (
@@ -172,8 +195,8 @@ const RegisterPage = () => {
 
                 <h2 className="text-2xl font-bold mb-1">Create your account</h2>
                 <p className="text-gray-500 text-sm mb-6">Start your shopping journey today.</p>
-
-                <div className="space-y-4">
+                <form onSubmit={handleSignUp}>
+    <div className="space-y-4">
                   <div>
                     <label className="text-xs font-semibold text-gray-500 tracking-wide">FULL NAME</label>
                     <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-3 mt-1">
@@ -221,13 +244,22 @@ const RegisterPage = () => {
                   </div>
                 </div>
 
+
+           
+
+            
+
                 <motion.button
+                type='submit'
+                disabled={loading}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="w-full mt-6 flex items-center justify-center gap-2  bg-gradient-to-r from-orange-500 to-purple-600 text-white py-2 text-md rounded-xl"
                 >
-                  Create account <ArrowRight className="w-4 h-4" />
+                   {loading ? "Creating..." : "Create account"} <ArrowRight className="w-4 h-4" />
                 </motion.button>
+
+                     </form>
 
                 <div className="flex items-center gap-3 my-5">
                   <div className="h-px bg-gray-200 flex-1" />
@@ -250,7 +282,7 @@ const RegisterPage = () => {
 
               <p className="text-center mt-6 text-gray-500 text-sm">
                 Already have an account?{' '}
-                <span className="text-pink-600 font-medium cursor-pointer">Login →</span>
+                <span onClick={()=>router.push("/login")} className="text-pink-600 font-medium cursor-pointer">Login →</span>
               </p>
             </motion.div>
           )}
