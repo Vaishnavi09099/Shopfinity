@@ -5,7 +5,8 @@ import { motion } from 'framer-motion'
 import { Mail, Lock,Package, Eye, EyeOff, ArrowRight, Sparkles, Zap, ShieldCheck } from 'lucide-react'
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { signIn, useSession } from 'next-auth/react';
+import {  useSession } from 'next-auth/react';
+import { signIn } from "next-auth/react";
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -184,7 +185,7 @@ Your shopping destination.
             <div className="h-px bg-gray-200 flex-1" />
           </div>
 
-          <button className="w-full flex items-center justify-center gap-2 border  border-gray-400/40 shadow-xl rounded-3xl py-3 text-sm font-medium">
+          <button onClick={()=>signIn("google",{callbackUrl:"/"})}  className="w-full flex items-center justify-center gap-2 border  border-gray-400/40 shadow-xl rounded-3xl py-3 text-sm font-medium">
             <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="google" />
             Continue with Google
           </button>

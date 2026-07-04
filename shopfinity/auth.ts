@@ -39,6 +39,11 @@ export const { handlers  , auth, signIn, signOut } = NextAuth({
         }
       },
     }),
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID as string,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET as string,
+    }),
+
 
   ],
 
@@ -63,6 +68,32 @@ export const { handlers  , auth, signIn, signOut } = NextAuth({
       session.user.role = token.role as string;
       return session;
     },
+
+    async signIn({ user, account }: any) {
+      if (account?.provider === "google") {
+        try {
+          await connectDb();
+          let existUser = await User.findOne({ email: user.email });
+          if (!existUser) {
+            existUser = new User({
+              name: user.name,
+              email: user.email,
+              image: user.image,
+             
+            });
+            await existUser.save();
+          }
+          user.id = existUser._id.toString();
+          user.role = existUser.role.toString();
+     
+        } catch (err) {
+          console.error("Error in Google sign-in callback:", err);
+      
+        }
+      }
+    return true;
+    },
+  
 
   
   },

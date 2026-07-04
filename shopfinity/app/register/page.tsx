@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ShoppingBag, Store, ShieldCheck, ArrowRight, ArrowLeft, User, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { signIn } from "next-auth/react";
 
 type Role = 'shopper' | 'vendor' | 'admin'
 
@@ -63,6 +64,7 @@ const RegisterPage = () => {
       setLoading(false)
     }
   }
+
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-orange-200 via-pink-100 to-purple-200 flex flex-col">
@@ -267,7 +269,7 @@ const RegisterPage = () => {
                   <div className="h-px bg-gray-200 flex-1" />
                 </div>
 
-                <motion.button                   whileHover={{ scale: 1.02 }}
+                <motion.button    onClick={()=>signIn("google",{callbackUrl:"/"})}             whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }} className="w-full flex items-center justify-center gap-2 border border-gray-100 shadow-lg bg-white rounded-xl py-3 text-sm font-medium">
                   <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="google" />
                   Sign up with Google
