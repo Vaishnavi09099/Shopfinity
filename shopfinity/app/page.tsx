@@ -1,6 +1,10 @@
 
 import { auth } from "@/auth";
+import AdminDashboard from "@/components/Admin/AdminDashboard";
 import EditRoleMobile from "@/components/EditRoleMobile";
+import Navbar from "@/components/Navbar";
+import UserDashboard from "@/components/User/UserDashboard";
+import VendorDashboard from "@/components/Vendor/VendorDashboard";
 
 
 
@@ -24,5 +28,21 @@ export default async function Home() {
     return <EditRoleMobile/>
   }
 
- 
+
+
+  const plainUser = JSON.parse(JSON.stringify(user))
+
+  return (
+    <>
+     
+    <Navbar user = {plainUser}/>
+      {user?.role =="user" ? <UserDashboard /> :user?.role== "vendor" ? <VendorDashboard /> : <AdminDashboard />}
+  
+     
+  
+    </>
+   
+  
+    
+  );
 }
