@@ -36,7 +36,7 @@ export default async function Home() {
     <>
      
     <Navbar user = {plainUser}/>
-      {user?.role =="user" ? <UserDashboard /> :user?.role== "vendor" ? <VendorDashboard /> : <AdminDashboard />}
+      {user?.role =="shopper" ? <UserDashboard /> :user?.role== "vendor" ? <VendorDashboard /> : <AdminDashboard />}
   
      
   

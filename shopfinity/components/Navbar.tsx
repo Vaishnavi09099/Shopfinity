@@ -23,8 +23,6 @@ import { signOut } from "next-auth/react";
 import axios from "axios";
 import { IUser } from "@/models/user.model";
 
-
-
 export default function Navbar({ user }: { user: IUser }) {
   const [openMenu, setOpenMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,11 +30,32 @@ export default function Navbar({ user }: { user: IUser }) {
   const pathname = usePathname();
   const [cartCount, setCartCount] = useState(0);
 
+  const fetchCartCount = async () => {
+    try {
+      const res = await axios.get("/api/cart/get");
 
+      if (res.status === 200) {
+        const cart = res.data?.cart || [];
+        const totalQty = cart.reduce(
+          (sum: number, item: any) => sum + item.quantity,
+          0
+        );
 
+        setCartCount(totalQty);
+      }
+    } catch (err) {
+      console.log("Navbar cart fetch error:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.role === "shopper") {
+      fetchCartCount();
+    }
+  }, [user]);
 
   return (
-    <div className="fixed top-4 left-0 w-full z-50 px-4">
+    <div className="fixed top-0 left-0 w-full z-50 px-4 pt-3">
       <nav className="max-w-7xl mx-auto bg-gradient-to-r from-orange-100/90 via-pink-50/90 to-purple-100/90 backdrop-blur-md rounded-full shadow-lg border border-white/60">
         <div className="px-6 py-3 flex justify-between items-center">
           {/* Logo */}
@@ -77,6 +96,7 @@ export default function Navbar({ user }: { user: IUser }) {
                   alt="user"
                   width={36}
                   height={36}
+                  referrerPolicy="no-referrer"
                   className="w-9 h-9 rounded-full object-cover border-2 border-pink-500 p-0.5 cursor-pointer"
                   onClick={() => setOpenMenu(!openMenu)}
                 />
@@ -96,7 +116,7 @@ export default function Navbar({ user }: { user: IUser }) {
             {user?.role === "shopper" && <CartBtn router={router} count={cartCount} />}
           </div>
 
-   
+          {/* Mobile Icons */}
           <div className="md:hidden flex items-center gap-4">
             {user?.role === "admin" || user?.role === "vendor" ? (
               <>
@@ -203,7 +223,7 @@ const ProfileDropdown = ({ router, close }: any) => (
   >
     <DropdownBtn Icon={AiOutlineUser} label="Profile" onClick={() => router.push("/profile")} close={close} />
     <DropdownBtn Icon={AiOutlineLogin} label="Sign In" onClick={() => router.push("/login")} close={close} />
-    <DropdownBtn Icon={AiOutlineLogout} label="Sign Out" onClick={signOut} close={close} />
+    <DropdownBtn Icon={AiOutlineLogout} label="Sign Out" onClick={() => signOut({ callbackUrl: "/login" })} close={close} />
   </motion.div>
 );
 
