@@ -2,9 +2,12 @@
 import { auth } from "@/auth";
 import AdminDashboard from "@/components/Admin/AdminDashboard";
 import EditRoleMobile from "@/components/EditRoleMobile";
+import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import UserDashboard from "@/components/User/UserDashboard";
-import VendorDashboard from "@/components/Vendor/VendorDashboard";
+import EditVendorDetails from "@/components/Vendor/EditVendorDetails";
+
+import VendorPage from "@/components/Vendor/VendorPage";
 
 
 
@@ -28,6 +31,13 @@ export default async function Home() {
     return <EditRoleMobile/>
   }
 
+  if(user.role == 'vendor'){
+    const inCompleteDetails = !user.shopName || !user.shopAddress || !user.gstNumber
+    if(inCompleteDetails){
+      return <EditVendorDetails/>
+    }
+  }
+
 
 
   const plainUser = JSON.parse(JSON.stringify(user))
@@ -36,8 +46,9 @@ export default async function Home() {
     <>
      
     <Navbar user = {plainUser}/>
-      {user?.role =="shopper" ? <UserDashboard /> :user?.role== "vendor" ? <VendorDashboard /> : <AdminDashboard />}
+      {user?.role =="shopper" ? <UserDashboard /> :user?.role== "vendor" ? <VendorPage user={plainUser}/> : <AdminDashboard />}
   
+  <Footer user = {plainUser}/>
      
   
     </>

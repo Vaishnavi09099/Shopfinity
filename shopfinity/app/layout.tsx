@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Sora } from "next/font/google";
 import Provider from "@/Provider";
+import StoreProvider from "@/redux/StoreProvider";
+import InitUser from "@/InitUser";
+
 
 
 const sora = Sora({
@@ -25,7 +28,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={sora.className}>
         <Provider >
-                     {children}
+          <StoreProvider >
+            <InitUser />
+               {children}
+
+          </StoreProvider>
+      
 
 
         </Provider>
