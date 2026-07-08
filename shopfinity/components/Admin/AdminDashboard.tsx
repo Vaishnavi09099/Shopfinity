@@ -189,7 +189,7 @@ export default function AdminDashbordLayout() {
       </AnimatePresence>
 
       {/* ---------------- MAIN AREA ---------------- */}
-      <div className="flex-1   bg-white/50 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg p-10  lg:mt-20 overflow-hidden">
+      <div className="flex-1   bg-white/50 backdrop-blur-xl  overflow-y-auto rounded-3xl border border-white/60 shadow-lg p-10  lg:mt-20 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={activePage}
@@ -203,7 +203,7 @@ export default function AdminDashbordLayout() {
             
 
             {/* Render actual page content below hero for non-dashboard pages */}
-            <div className="mt-6">{renderPage()}</div>
+            <div className="mt-6 ">{renderPage()}</div>
           </motion.div>
         </AnimatePresence>
       </div>
