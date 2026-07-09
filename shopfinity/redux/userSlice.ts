@@ -43,7 +43,7 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setUserData: (state, action: PayloadAction<IUser>) => {
-      state.userData = action.payload;
+    state.userData = { ...state.userData, ...action.payload };
     },
     clearUserData: (state) => {
       state.userData = null;
