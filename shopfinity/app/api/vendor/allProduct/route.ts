@@ -9,7 +9,7 @@ export async function GET() {
     await connectDb();
 
     // ✅ sirf vendors fetch honge
-    const products = await Product.find().populate("vendor","name email shopName").sort({ createdAt: -1 });
+    const products = await Product.find().populate("vendor","name email shopName") .populate("reviews.user", "name image").sort({ createdAt: -1 });
 
     return NextResponse.json(
         products,

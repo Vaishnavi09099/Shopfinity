@@ -32,7 +32,7 @@ export default function Navbar({ user }: { user: IUser }) {
 
   const fetchCartCount = async () => {
     try {
-      const res = await axios.get("/api/cart/get");
+      const res = await axios.get("/api/user/cart/get");
 
       if (res.status === 200) {
         const cart = res.data?.cart || [];
