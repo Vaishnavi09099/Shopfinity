@@ -187,7 +187,7 @@ export default function VendorDashboardLayout() {
       </AnimatePresence>
 
       {/* ---------------- MAIN AREA ---------------- */}
-      <div className="flex-1 bg-white/50 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg p-10 lg:mt-20 overflow-hidden">
+      <div className="flex-1 bg-white/50 backdrop-blur-xl  overflow-y-auto rounded-3xl border border-white/60 shadow-lg p-10 lg:mt-20 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={activePage}

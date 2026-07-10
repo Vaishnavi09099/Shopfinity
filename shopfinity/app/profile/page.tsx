@@ -24,10 +24,11 @@ import {
   Loader2,
   Hash,
   Phone,
+  Home,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
-type TabType = "overview" | "orders" ;
+type TabType = "overview" | "orders";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -115,17 +116,14 @@ export default function ProfilePage() {
     user.role === "admin"
       ? [
           { id: "overview" as TabType, label: "Overview", icon: <Sparkles className="w-4 h-4" /> },
-        
         ]
       : user.role === "vendor"
       ? [
           { id: "overview" as TabType, label: "Overview", icon: <Sparkles className="w-4 h-4" /> },
-         
         ]
       : [
           { id: "overview" as TabType, label: "Overview", icon: <Sparkles className="w-4 h-4" /> },
           { id: "orders" as TabType, label: "My Orders", icon: <Package className="w-4 h-4" /> },
-        
         ];
 
   return (
@@ -170,13 +168,21 @@ export default function ProfilePage() {
                   <Phone className="w-3.5 h-3.5" /> {user.phone || "-"}
                 </span>
               </div>
-
-             
             </div>
           </div>
 
           <div className="flex items-center gap-3 flex-shrink-0">
-            {/* My Orders - only for shopper, same as original file 1 */}
+            {/* Back to Home */}
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 bg-white/90 text-gray-700 text-sm font-semibold px-5 py-2.5 rounded-full shadow-sm border border-white/60"
+            >
+              <Home className="w-3.5 h-3.5" /> Home
+            </motion.button>
+
+            {/* My Orders - only for shopper */}
             {user.role === "shopper" && (
               <motion.button
                 whileHover={{ scale: 1.03 }}
@@ -194,7 +200,6 @@ export default function ProfilePage() {
               onClick={() => {
                 setShowEditProfile(true);
                 setShowEditShop(false);
-                handleUpdateProfile
               }}
               className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-purple-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-md"
             >
@@ -272,7 +277,7 @@ export default function ProfilePage() {
                   Here's a summary of your account details.
                 </p>
 
-                {/* Account details - real data, same fields as original file 1 */}
+                {/* Account details */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <InfoCard icon={<Mail className="w-4 h-4" />} label="Email" value={user.email} />
                   <InfoCard icon={<Phone className="w-4 h-4" />} label="Phone" value={user.phone || "-"} />
@@ -287,8 +292,6 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
-
-          
           </div>
         </div>
       </div>
@@ -458,4 +461,3 @@ const ModalWrapper = ({ children, onClose }: { children: React.ReactNode; onClos
     </motion.div>
   </motion.div>
 );
-
