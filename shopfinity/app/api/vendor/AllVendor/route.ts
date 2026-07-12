@@ -9,6 +9,8 @@ export async function GET() {
     // sirf vendors fetch honge
     const vendors = await User.find({ role: "vendor" })
       .select("-password")
+      .populate("vendorProducts")
+
       .sort({ createdAt: -1 });
 
     return NextResponse.json(vendors, { status: 200 });

@@ -74,13 +74,13 @@ const OrderSchema = new Schema<IOrder>(
     ],
 
     buyer: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
 
     productVendor: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
