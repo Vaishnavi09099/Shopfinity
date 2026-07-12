@@ -23,7 +23,8 @@ import { signOut } from "next-auth/react";
 import axios from "axios";
 import { IUser } from "@/models/user.model";
 
-export default function Navbar({ user }: { user: IUser }) {
+export default function Navbar({ user }: { user?: IUser })
+ {
   const [openMenu, setOpenMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();

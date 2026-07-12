@@ -8,9 +8,13 @@ import { AppDispatch, RootState } from "@/redux/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiTruck, FiSearch, FiDownload, FiChevronRight, FiPackage, FiCheckCircle, FiMapPin } from "react-icons/fi";
 import { setAllOrderData } from "@/redux/orderSlice";
+import Navbar from "@/components/Navbar";
+import { useSession } from "next-auth/react";
+import { IUser } from "@/models/user.model";
 
 export default function OrdersPage() {
   const dispatch = useDispatch<AppDispatch>();
+  const { data: session } = useSession();
 
   const { userData } = useSelector((state: RootState) => state.user);
   const { allOrderData } = useSelector((state: RootState) => state.order);
@@ -254,6 +258,8 @@ const statusStepMap: Record<string, string> = {
     }
   };
 
+
+
   // Status badge styling
   const statusBadge = (status: string) => {
     switch (status) {
@@ -292,9 +298,14 @@ const statusStepMap: Record<string, string> = {
     { key: "delivered", label: "Delivered" },
     { key: "cancelled", label: "Cancelled" },
   ];
+  
+
+  const navbarUser = session?.user as IUser | undefined;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-purple-50 to-white p-4 sm:p-6">
+    <>
+      <Navbar user={navbarUser} />
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-purple-50 to-white pt-24 sm:pt-28 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
         {/* HEADER */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-700 via-fuchsia-600 to-orange-500 p-6 sm:p-8 mb-6 shadow-2xl shadow-purple-200/50">
@@ -505,6 +516,7 @@ const statusStepMap: Record<string, string> = {
                 <p className="text-sm text-gray-400">{formatDate(selectedOrder.createdAt)}</p>
 
                 <hr className="my-4 border-gray-100" />
+             
 
                 {/* Products */}
                 <h3 className="font-semibold mb-2 text-gray-700">Products</h3>
@@ -552,7 +564,10 @@ const statusStepMap: Record<string, string> = {
                   </div>
                 </div>
 
-                {selectedOrder.orderStatus === "delivered" &&
+
+
+                {selectedOrder.orderStatus === "delivered"
+                 &&
                   selectedOrder.deliveryDate && (
                     <div className="mt-3 text-sm text-green-600 font-medium">
                       Delivered on:{" "}
@@ -602,70 +617,72 @@ const statusStepMap: Record<string, string> = {
                       : "Track Order"}
                   </button>
 
-                  {/* RETURN / CANCEL BUTTON */}
-                  {selectedOrder.orderStatus === "delivered" ? (
-                    (() => {
-                      const deliveryDate = selectedOrder.deliveryDate;
+           
+                 {/* RETURN / CANCEL BUTTON */}
+{selectedOrder.orderStatus === "returned" || selectedOrder.orderStatus === "cancelled" ? null :
+selectedOrder.orderStatus === "delivered" ? (
+  (() => {
+    const deliveryDate = selectedOrder.deliveryDate;
 
-                      return selectedOrder.products.map((p: any, i: number) => {
-                        const replacementDays = p.product?.replacementDays || 0;
+    return selectedOrder.products.map((p: any, i: number) => {
+      const replacementDays = p.product?.replacementDay || 0;
 
-                        const eligible = isReturnEligible(deliveryDate, replacementDays);
-                        const remaining = getRemainingReturnDays(deliveryDate, replacementDays);
-                        const returnEndDate = getReturnEndDate(deliveryDate, replacementDays);
+      const eligible = isReturnEligible(deliveryDate, replacementDays);
+      const remaining = getRemainingReturnDays(deliveryDate, replacementDays);
+      const returnEndDate = getReturnEndDate(deliveryDate, replacementDays);
 
-                        return (
-                          <div
-                            key={i}
-                            className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-xl"
-                          >
-                            <div>
-                              <p className="text-xs text-gray-500">{p.product?.title}</p>
+      return (
+        <div
+          key={i}
+          className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-xl"
+        >
+          <div>
+            <p className="text-xs text-gray-500">{p.product?.title}</p>
 
-                              {eligible ? (
-                                <>
-                                  <p className="text-xs text-yellow-600 font-medium">
-                                    Return available for {remaining} day
-                                    {remaining > 1 ? "s" : ""}
-                                  </p>
+            {eligible ? (
+              <>
+                <p className="text-xs text-yellow-600 font-medium">
+                  Return available for {remaining} day
+                  {remaining > 1 ? "s" : ""}
+                </p>
 
-                                  {returnEndDate && (
-                                    <p className="text-[11px] text-gray-400">
-                                      Return till:{" "}
-                                      {returnEndDate.toLocaleDateString("en-IN")}
-                                    </p>
-                                  )}
-                                </>
-                              ) : (
-                                <p className="text-xs text-red-500">Return window closed</p>
-                              )}
-                            </div>
+                {returnEndDate && (
+                  <p className="text-[11px] text-gray-400">
+                    Return till:{" "}
+                    {returnEndDate.toLocaleDateString("en-IN")}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-red-500">Return window closed</p>
+            )}
+          </div>
 
-                            {eligible && (
-                              <button
-                                onClick={() => handleReturnOrder(selectedOrder._id)}
-                                className="mx-3 px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600"
-                              >
-                                Return
-                              </button>
-                            )}
-                          </div>
-                        );
-                      });
-                    })()
-                  ) : (
-                    <button
-                      disabled={isCancelDisabled(selectedOrder)}
-                      onClick={() => handleCancelOrder(selectedOrder._id)}
-                      className={`px-4 py-2.5 rounded-xl text-sm font-medium ${
-                        isCancelDisabled(selectedOrder)
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-red-500 text-white hover:bg-red-600"
-                      }`}
-                    >
-                      Cancel Order
-                    </button>
-                  )}
+          {eligible && (
+            <button
+              onClick={() => handleReturnOrder(selectedOrder._id)}
+              className="mx-3 px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600"
+            >
+              Return
+            </button>
+          )}
+        </div>
+      );
+    });
+  })()
+) : (
+  <button
+    disabled={isCancelDisabled(selectedOrder)}
+    onClick={() => handleCancelOrder(selectedOrder._id)}
+    className={`px-4 py-2.5 rounded-xl text-sm font-medium ${
+      isCancelDisabled(selectedOrder)
+        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+        : "bg-red-500 text-white hover:bg-red-600"
+    }`}
+  >
+    Cancel Order
+  </button>
+)}
                 </div>
               </motion.div>
             </div>
@@ -718,5 +735,6 @@ const statusStepMap: Record<string, string> = {
         </AnimatePresence>
       </div>
     </div>
+    </>
   );
 }

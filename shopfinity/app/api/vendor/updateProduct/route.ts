@@ -60,8 +60,8 @@ export async function PUT(req: NextRequest) {
     const sizes = formData.getAll("sizes");
 
     // ✅ Policies
-    const replacementDays = Number(
-      formData.get("replacementDays") || 0
+    const replacementDay = Number(
+      formData.get("replacementDay") || 0
     );
     const freeDelivery = formData.get("freeDelivery") === "true";
     const warranty =
@@ -116,7 +116,7 @@ export async function PUT(req: NextRequest) {
         isWearable,
         sizes: isWearable ? sizes : [],
 
-        replacementDays,
+        replacementDay,
         freeDelivery,
         warranty,
         payOnDelivery,

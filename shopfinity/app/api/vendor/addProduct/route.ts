@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const sizes = formData.getAll("sizes");
 
     // ✅ ✅ POLICY FIELDS
-    const replacementDays = Number(formData.get("replacementDays") || 0);
+    const replacementDay = Number(formData.get("replacementDay") || 0);
     const freeDelivery = formData.get("freeDelivery") === "true";
     const warranty = (formData.get("warranty") as string) || "No Warranty";
     const payOnDelivery = formData.get("payOnDelivery") === "true";
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
       sizes: isWearable ? sizes : [],
 
       // ✅ ✅ Policies
-      replacementDays,
+      replacementDay,
       freeDelivery,
       warranty,
       payOnDelivery,

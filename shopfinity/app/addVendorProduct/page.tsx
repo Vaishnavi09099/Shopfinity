@@ -46,7 +46,7 @@ export default function AddProduct() {
   const [sizes, setSizes] = useState<string[]>([]);
 
   // ✅ POLICY STATES
-  const [replacementDays, setReplacementDays] = useState("");
+  const [replacementDay, setReplacementDay] = useState("");
   const [freeDelivery, setFreeDelivery] = useState(false);
   const [warranty, setWarranty] = useState("");
   const [payOnDelivery, setPayOnDelivery] = useState(false);
@@ -131,7 +131,7 @@ export default function AddProduct() {
       sizes.forEach((size) => formData.append("sizes", size));
 
       // ✅ POLICY FIELDS
-      formData.append("replacementDays", replacementDays);
+      formData.append("replacementDay", replacementDay);
       formData.append("freeDelivery", String(freeDelivery));
       formData.append("warranty", warranty);
       formData.append("payOnDelivery", String(payOnDelivery));
@@ -284,8 +284,8 @@ export default function AddProduct() {
                 className="p-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-pink-400 transition-colors"
                 placeholder="Replacement Days (e.g. 7)"
                 type="number"
-                value={replacementDays}
-                onChange={(e) => setReplacementDays(e.target.value)}
+                value={replacementDay}
+                onChange={(e) => setReplacementDay(e.target.value)}
               />
 
               <input
