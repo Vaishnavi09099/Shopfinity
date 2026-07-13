@@ -18,6 +18,14 @@ export interface IUser {
   requestedAt?: Date;
   approvedAt?: Date;
   rejectedReason?: string;
+     chats?: {
+        with: mongoose.Types.ObjectId; // kis user ke saath chat
+        messages: {
+          sender: mongoose.Types.ObjectId; // kisne message bheja
+          text: string;
+          createdAt: Date;
+        }[];
+      }[];
 
   vendorProducts?: mongoose.Types.ObjectId[];
   orders?: mongoose.Types.ObjectId[];
@@ -87,6 +95,36 @@ const userSchema = new mongoose.Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    
+          chats: [
+          {
+            with: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "User",
+              required: true,
+            },
+    
+            messages: [
+              {
+                sender: {
+                  type: mongoose.Schema.Types.ObjectId,
+                  ref: "User",
+                  required: true,
+                },
+    
+                text: {
+                  type: String,
+                  required: true,
+                },
+    
+                createdAt: {
+                  type: Date,
+                  default: Date.now,
+                },
+              },
+            ],
+          },
+        ],
 
     verificationStatus: {
       type: String,

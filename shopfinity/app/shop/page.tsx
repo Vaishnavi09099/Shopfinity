@@ -24,7 +24,7 @@ export default function ShopsPage() {
 
   if (!allVendorData || allVendorData.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 via-pink-50 to-purple-200">
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-orange-100 via-pink-50 to-purple-200">
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-100 to-purple-100 flex items-center justify-center mx-auto mb-4">
             <Store className="w-6 h-6 text-purple-500" />
