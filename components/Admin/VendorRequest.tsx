@@ -26,7 +26,7 @@ type Vendor = {
   email: string;
   phone?: string;
   shopName?: string;
-  businessAddress?: string;
+  shopAddress?: string;
   gstNumber?: string;
   verificationStatus?: "pending" | "approved" | "rejected";
 };
@@ -235,7 +235,7 @@ export default function VendorRequest() {
                     </p>
                     <div className={`flex items-center gap-1 text-[11px] mt-1 ${isSelected ? "text-white/70" : "text-gray-400"}`}>
                       <MapPin className="w-3 h-3" />
-                      {vendor.businessAddress || "—"}
+                      {vendor.shopAddress || "—"}
                     </div>
                   </div>
 
@@ -270,7 +270,7 @@ export default function VendorRequest() {
             <div className="grid grid-cols-2 gap-4 mb-6">
               <InfoField icon={Mail} label="Email" value={selectedVendor.email} />
               <InfoField icon={Phone} label="Phone" value={selectedVendor.phone || "—"} />
-              <InfoField icon={MapPin} label="Address" value={selectedVendor.businessAddress || "—"} />
+              <InfoField icon={MapPin} label="Address" value={selectedVendor.shopAddress || "—"} />
               <InfoField icon={FileText} label="GST" value={selectedVendor.gstNumber || "—"} />
             </div>
 
