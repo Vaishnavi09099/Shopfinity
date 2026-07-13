@@ -15,7 +15,7 @@ export async function POST(req:NextRequest){
     
     try {
          event = stripe.webhooks.constructEvent(
-            rawBody,sig!,process.env.STRIPE_WEBHOOK_SECRET!
+            rawBody,sig!,process.env.STRIPE_WEBHOOK_KEY!
         )
     } catch (error) {
         console.log("signature verification failed",error)

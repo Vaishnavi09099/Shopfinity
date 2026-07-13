@@ -48,12 +48,14 @@ export default function ShopsPage() {
     <>
       <Navbar user={navbarUser} />
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      viewport={{ once: false, amount: 0.5 }}
         className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-orange-50 via-pink-50 to-purple-100 px-4 pt-24 pb-16"
       >
       {/* ✅ HEADING */}
-      <div className="max-w-7xl mx-auto mb-10  mt-10 text-center">
+      <div className="max-w-7xl mx-auto mb-10  text-center">
         <span className="text-xs font-bold tracking-widest text-pink-600 uppercase">
           Verified Sellers
         </span>

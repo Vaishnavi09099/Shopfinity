@@ -78,10 +78,7 @@ export default function VendorProducts() {
     <div className="w-full min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-100 p-4 sm:p-8">
       {/* ================= HEADER / HERO CARD ================= */}
       <div className="bg-white/70 backdrop-blur-md rounded-3xl border border-white/60 shadow-sm p-6 sm:p-8 mb-6">
-        <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-pink-600 uppercase mb-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-          Vendor / Catalog
-        </div>
+       
 
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
