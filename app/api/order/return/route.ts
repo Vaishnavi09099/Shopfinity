@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import Order from "@/models/order.model";
 import connectDb from "@/lib/connectDb";
+import { enqueueOrderStatusEmail } from "@/lib/queue";
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,6 +61,20 @@ export async function POST(req: NextRequest) {
     order.returnedAmount = returnedAmount;
 
     await order.save();
+
+    const email = (order as any).buyer?.email || (order as any).address?.email;
+    if (email) {
+      try {
+        await enqueueOrderStatusEmail({
+          email,
+          name: order.address?.name || (order as any).buyer?.name || "Customer",
+          orderId: order._id.toString(),
+          status: "returned",
+        });
+      } catch (emailError) {
+        console.error("Failed to queue returned order status email", emailError);
+      }
+    }
 
     return NextResponse.json(
       {

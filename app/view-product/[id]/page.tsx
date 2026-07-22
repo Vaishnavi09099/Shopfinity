@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { FaStar, FaRegStar, FaUserCircle } from "react-icons/fa";
@@ -45,16 +45,46 @@ export default function ProductViewPage() {
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
-  const { allProductData } = useSelector(
-    (state: RootState) => state.vendor
-  );
+  const [productState, setProductState] = useState<IProduct | null>(null);
+  const [loadingProduct, setLoadingProduct] = useState(true);
 
-  const product: IProduct | undefined = allProductData?.find(
+  const { allProductData } = useSelector((state: RootState) => state.vendor);
+
+  const productFromStore: IProduct | undefined = allProductData?.find(
     (p: IProduct) => String(p._id) === String(id)
   );
 
+  const product = productFromStore || productState;
+
+  // ✅ FIX: useEffect ab yahan hai — kisi bhi early-return se pehle
+  // Rules of Hooks: hooks kabhi conditional return ke baad nahi ho sakte
+  useEffect(() => {
+    if (productFromStore) {
+      setProductState(productFromStore);
+      setLoadingProduct(false);
+      return;
+    }
+
+    const fetchProduct = async () => {
+      try {
+        setLoadingProduct(true);
+        const res = await axios.get("/api/vendor/allProduct");
+        const products: IProduct[] = res.data;
+        const found = products.find((p) => String(p._id) === String(id));
+        setProductState(found || null);
+      } catch (error) {
+        console.error("Failed to fetch product details", error);
+        setProductState(null);
+      } finally {
+        setLoadingProduct(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id, productFromStore]);
+
   // ✅ Loading
-  if (!allProductData || allProductData.length === 0) {
+  if (loadingProduct) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-orange-50">
         <div className="flex flex-col items-center gap-4">
@@ -64,7 +94,7 @@ export default function ProductViewPage() {
             transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
           />
           <h1 className="text-lg font-semibold text-gray-500">
-            Loading products...
+            Loading product...
           </h1>
         </div>
       </div>
@@ -223,9 +253,9 @@ export default function ProductViewPage() {
                 >
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
-            transition={{ duration: 0.5 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -20, opacity: 0 }}
+                    transition={{ duration: 0.5 }}
                     className="relative w-full h-full"
                   >
                     <Image
@@ -605,73 +635,73 @@ export default function ProductViewPage() {
 
           {/* 📄 EXISTING REVIEWS */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-8">
-            {product.reviews && product.reviews.length > 0 ? (
-              product.reviews.map((r, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: i * 0.05 }}
-                  className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden">
-                      {typeof r.user === "object" && r.user.image ? (
-                        <Image
-                          src={r.user.image}
-                          alt={r.user.name || "User"}
-                          width={40}
-                          height={40}
-                          className="rounded-full object-cover"
-                        />
-                      ) : (
-                        <FaUserCircle className="text-gray-400 w-8 h-8" />
-                      )}
-                    </div>
+          {product.reviews && product.reviews.length > 0 ? (
+  product.reviews.map((r, i) => (
+    <motion.div
+      key={i}
+      initial={{ opacity: 0, y: 15 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, delay: i * 0.05 }}
+      className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5"
+    >
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden">
+          {r.user && typeof r.user === "object" && r.user.image ? (
+            <Image
+              src={r.user.image}
+              alt={r.user.name || "User"}
+              width={40}
+              height={40}
+              className="rounded-full object-cover"
+            />
+          ) : (
+            <FaUserCircle className="text-gray-400 w-8 h-8" />
+          )}
+        </div>
 
-                    <div>
-                      <p className="text-gray-900 font-semibold text-sm">
-                        {r.user.name}
-                      </p>
-                      <div className="flex text-amber-400 text-xs">
-                        {[1, 2, 3, 4, 5].map((i) =>
-                          i <= r.rating ? (
-                            <FaStar key={i} />
-                          ) : (
-                            <FaRegStar key={i} />
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="text-gray-600 text-sm mb-3">{r.comment}</p>
-
-                  {r.image && (
-                    <div className="w-[160px] h-[160px] border border-gray-100 rounded-xl overflow-hidden bg-gray-50">
-                      <motion.div
-                        whileHover={{ scale: 1.2 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="w-full h-full"
-                      >
-                        <Image
-                          src={r.image}
-                          alt="Review Image"
-                          width={160}
-                          height={160}
-                          className="object-contain w-full h-full"
-                        />
-                      </motion.div>
-                    </div>
-                  )}
-                </motion.div>
-              ))
-            ) : (
-              <p className="text-gray-400 col-span-full text-center py-10">
-                No reviews yet. Be the first to review!
-              </p>
+        <div>
+          <p className="text-gray-900 font-semibold text-sm">
+            {r.user && typeof r.user === "object" ? r.user.name : "Anonymous"}
+          </p>
+          <div className="flex text-amber-400 text-xs">
+            {[1, 2, 3, 4, 5].map((i) =>
+              i <= r.rating ? (
+                <FaStar key={i} />
+              ) : (
+                <FaRegStar key={i} />
+              )
             )}
+          </div>
+        </div>
+      </div>
+
+      <p className="text-gray-600 text-sm mb-3">{r.comment}</p>
+
+      {r.image && (
+        <div className="w-[160px] h-[160px] border border-gray-100 rounded-xl overflow-hidden bg-gray-50">
+          <motion.div
+            whileHover={{ scale: 1.2 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="w-full h-full"
+          >
+            <Image
+              src={r.image}
+              alt="Review Image"
+              width={160}
+              height={160}
+              className="object-contain w-full h-full"
+            />
+          </motion.div>
+        </div>
+      )}
+    </motion.div>
+  ))
+) : (
+  <p className="text-gray-400 col-span-full text-center py-10">
+    No reviews yet. Be the first to review!
+  </p>
+)}
           </div>
         </motion.div>
       </div>

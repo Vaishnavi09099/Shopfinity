@@ -18,11 +18,15 @@ export default function ShopsPage() {
 
   useGetAllVendors();
 
-  const allVendorData: IUser[] = useSelector(
+const allVendorData: IUser[] = useSelector(
     (state: RootState) => state.vendor.allVendorData
   );
 
-  if (!allVendorData || allVendorData.length === 0) {
+  const approvedVendors = allVendorData?.filter(
+    (vendor) => vendor.verificationStatus === "approved"
+  );
+
+  if (!approvedVendors || approvedVendors.length === 0) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-orange-100 via-pink-50 to-purple-200">
         <div className="text-center">
@@ -73,7 +77,7 @@ export default function ShopsPage() {
       {/* ✅ GRID */}
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {allVendorData.map((vendor, i) => (
+          {approvedVendors.map((vendor, i) => (
             <motion.div
               key={String(vendor._id)}
               initial={{ opacity: 0, y: 50, scale: 0.9 }}

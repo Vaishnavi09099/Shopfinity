@@ -16,6 +16,7 @@ import connectDb from "@/lib/connectDb";
 
 import User from "@/models/user.model";
 import { redirect } from "next/navigation";
+export const dynamic = "force-dynamic" 
 
 
 

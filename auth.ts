@@ -8,6 +8,7 @@ import User from "./models/user.model";
 
 
 export const { handlers  , auth, signIn, signOut } = NextAuth({
+   trustHost: true,
   providers: [
     Credentials({
       credentials: {

@@ -17,6 +17,8 @@ export default function VendorOrdersPage() {
   const [otpInput, setOtpInput] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rejectionModal, setRejectionModal] = useState<any>(null);
+  const [rejectionReason, setRejectionReason] = useState<string>("");
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -62,6 +64,65 @@ export default function VendorOrdersPage() {
     }
   };
 
+  const handleApproveReturn = async (orderId: string) => {
+    try {
+      setLoadingId(orderId);
+      await axios.post("/api/order/approve-return", { orderId, approve: true });
+      dispatch(
+        setAllOrderData(
+          allOrderData.map((o: any) => (o._id === orderId ? { ...o, orderStatus: "return_approved", rejectionReason: null } : o))
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Failed to approve return");
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const handleRejectReturn = async (orderId: string) => {
+    if (!rejectionReason || !rejectionReason.trim()) {
+      alert("Please provide a rejection reason.");
+      return;
+    }
+
+    try {
+      setLoadingId(orderId);
+      await axios.post("/api/order/approve-return", { orderId, approve: false, rejectionReason: rejectionReason.trim() });
+      dispatch(
+        setAllOrderData(
+          allOrderData.map((o: any) => (o._id === orderId ? { ...o, orderStatus: "return_rejected", rejectionReason: rejectionReason.trim() } : o))
+        )
+      );
+      setRejectionModal(null);
+      setRejectionReason("");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to reject return");
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const handleCompleteRefund = async (orderId: string) => {
+    try {
+      setLoadingId(orderId);
+      const res = await axios.post("/api/order/complete-refund", { orderId });
+      const returnedOrder = res.data.order;
+      dispatch(
+        setAllOrderData(
+          allOrderData.map((o: any) => (o._id === orderId ? { ...o, orderStatus: "returned", returnedAmount: returnedOrder.returnedAmount, refundedAt: returnedOrder.refundedAt } : o))
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Failed to complete refund");
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
   const verifyAndDeliver = async () => {
     try {
       setLoadingId(otpModal._id);
@@ -72,7 +133,7 @@ export default function VendorOrdersPage() {
       dispatch(
         setAllOrderData(
           allOrderData.map((o: any) =>
-            o._id === otpModal._id ? { ...o, orderStatus: "delivered" } : o
+            String(o._id) === String(otpModal._id) ? { ...o, orderStatus: "delivered" } : o
           )
         )
       );
@@ -166,10 +227,42 @@ export default function VendorOrdersPage() {
                       </span>
                     </td>
                     <td className="p-4 text-center">
-                      {["cancelled", "delivered", "returned"].includes(order.orderStatus) ? (
+                      {[
+                        "cancelled",
+                        "delivered",
+                        "returned",
+                        "return_rejected",
+                      ].includes(order.orderStatus) ? (
                         <span className={`text-xs font-semibold capitalize ${statusBadge(order.orderStatus)} px-3 py-1 rounded-full`}>
                           {order.orderStatus}
                         </span>
+                      ) : order.orderStatus === "return_requested" ? (
+                        <div className="flex gap-2 items-center justify-center">
+                          <button
+                            onClick={() => handleApproveReturn(order._id)}
+                            disabled={loadingId === order._id}
+                            className="px-3 py-1.5 bg-sky-100 text-sky-700 rounded-full text-xs font-medium"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => setRejectionModal(order)}
+                            disabled={loadingId === order._id}
+                            className="px-3 py-1.5 bg-rose-100 text-rose-700 rounded-full text-xs font-medium"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      ) : order.orderStatus === "return_approved" ? (
+                        <div className="flex items-center justify-center">
+                          <button
+                            onClick={() => handleCompleteRefund(order._id)}
+                            disabled={loadingId === order._id}
+                            className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium"
+                          >
+                            Complete Refund
+                          </button>
+                        </div>
                       ) : (
                         <select
                           disabled={loadingId === order._id}
@@ -240,29 +333,58 @@ export default function VendorOrdersPage() {
                   </span>
                 </div>
 
-                {!["cancelled", "delivered", "returned"].includes(order.orderStatus) && (
-                  <select
-                    disabled={loadingId === order._id}
-                    value={order.orderStatus}
-                    onChange={async (e) => {
-                      if (e.target.value === "delivered") {
-                        await axios.post("/api/order/update-status", {
-                          orderId: order._id,
-                          status: "delivered",
-                        });
-                        setOtpModal(order);
-                      } else {
-                        updateStatus(order._id, e.target.value);
-                      }
-                    }}
-                    className="mt-3 w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-pink-400"
-                  >
-                    {statusOptions.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                {!["cancelled", "delivered", "returned", "return_rejected"].includes(order.orderStatus) && (
+                  order.orderStatus === "return_requested" ? (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => handleApproveReturn(order._id)}
+                        disabled={loadingId === order._id}
+                        className="flex-1 px-3 py-2.5 bg-sky-100 text-sky-700 rounded-2xl text-sm font-medium"
+                      >
+                        Approve Return
+                      </button>
+                      <button
+                        onClick={() => setRejectionModal(order)}
+                        disabled={loadingId === order._id}
+                        className="flex-1 px-3 py-2.5 bg-rose-100 text-rose-700 rounded-2xl text-sm font-medium"
+                      >
+                        Reject Return
+                      </button>
+                    </div>
+                  ) : order.orderStatus === "return_approved" ? (
+                    <div className="mt-3">
+                      <button
+                        onClick={() => handleCompleteRefund(order._id)}
+                        disabled={loadingId === order._id}
+                        className="w-full px-3 py-2.5 bg-amber-100 text-amber-700 rounded-2xl text-sm font-medium"
+                      >
+                        Complete Refund
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      disabled={loadingId === order._id}
+                      value={order.orderStatus}
+                      onChange={async (e) => {
+                        if (e.target.value === "delivered") {
+                          await axios.post("/api/order/update-status", {
+                            orderId: order._id,
+                            status: "delivered",
+                          });
+                          setOtpModal(order);
+                        } else {
+                          updateStatus(order._id, e.target.value);
+                        }
+                      }}
+                      className="mt-3 w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-pink-400"
+                    >
+                      {statusOptions.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  )
                 )}
               </motion.div>
             ))}
@@ -312,6 +434,42 @@ export default function VendorOrdersPage() {
                 className="flex-1 bg-gradient-to-r from-orange-500 to-purple-600 text-white font-semibold py-3 rounded-2xl text-sm disabled:opacity-60"
               >
                 {loadingId === otpModal._id ? "Verifying..." : "Verify & Deliver"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      {/* ================= REJECTION MODAL ================= */}
+      {rejectionModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white p-6 rounded-3xl w-full max-w-md shadow-xl border border-white/60"
+          >
+            <h3 className="text-lg font-bold mb-2">Reject Return Request</h3>
+            <p className="text-sm text-gray-500 mb-4">Please provide a reason for rejecting this return request.</p>
+
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm outline-none focus:border-pink-400 transition-colors mb-4"
+              placeholder="Reason for rejection"
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setRejectionModal(null); setRejectionReason(""); }}
+                className="flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-2xl text-sm hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleRejectReturn(rejectionModal._id)}
+                disabled={loadingId === rejectionModal._id}
+                className="flex-1 bg-rose-600 text-white font-semibold py-3 rounded-2xl text-sm disabled:opacity-60"
+              >
+                {loadingId === rejectionModal._id ? "Rejecting..." : "Reject Return"}
               </button>
             </div>
           </motion.div>

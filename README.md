@@ -96,6 +96,13 @@ A modern, full-stack multi-vendor e-commerce platform built with Next.js 16, Rea
    # Nodemailer
    MAILER_EMAIL=your_email
    MAILER_PASSWORD=your_email_password
+
+   # Resend
+   RESEND_API_KEY=your_resend_api_key
+   RESEND_FROM_EMAIL=you@yourdomain.com
+
+   # Redis
+   REDIS_URL=redis://127.0.0.1:6379
    ```
 
 4. **Run the development server**

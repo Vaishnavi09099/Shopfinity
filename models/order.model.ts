@@ -25,12 +25,17 @@ export interface IOrder {
     | "confirmed"
     | "shipped"
     | "delivered"
+    | "return_requested"
+    | "return_approved"
+    | "return_rejected"
     | "returned"
     | "cancelled";
 
-    cancelledAt?:Date;
-  // ✅ NEW: RETURNED AMOUNT
+  cancelledAt?: Date;
   returnedAmount?: number;
+  returnReason?: string | null;
+rejectionReason?: string | null;
+  refundedAt?: Date;
 
   address: {
     name: string;
@@ -45,9 +50,9 @@ export interface IOrder {
     stripeSessionId?: string;
   };
  deliveryDate?:Date;
-  deliveryOtp?:string;
+  
 
-  otpExpiresAt?:Date;
+
 
   createdAt: Date;
   updatedAt: Date;
@@ -123,20 +128,36 @@ const OrderSchema = new Schema<IOrder>(
         "confirmed",
         "shipped",
         "delivered",
+        "return_requested",
+        "return_approved",
+        "return_rejected",
         "returned",
-        "cancelled"
+        "cancelled",
       ],
       default: "pending",
     },
     cancelledAt: {
-  type: Date,
-},
+      type: Date,
+    },
 
-
-    // ✅ NEW: Returned Amount for Refund Accounting
     returnedAmount: {
       type: Number,
       default: 0,
+    },
+
+    returnReason: {
+      type: String,
+      default: null,
+    },
+
+    rejectionReason: {
+      type: String,
+      default: null,
+    },
+
+    refundedAt: {
+      type: Date,
+      default: null,
     },
 
     address: {
@@ -170,12 +191,8 @@ const OrderSchema = new Schema<IOrder>(
      deliveryDate: {
   type: Date,
 },
-    deliveryOtp: {
-  type: String,
-},
-otpExpiresAt: {
-  type: Date,
-},
+   
+
 
   },
   { timestamps: true }

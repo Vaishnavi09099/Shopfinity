@@ -1,12 +1,17 @@
-
 import connectDb from "@/lib/connectDb"
 import Order from "@/models/order.model"
 
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 
+let stripe: Stripe | null = null;
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+function getStripe() {
+  if (!stripe) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  }
+  return stripe;
+}
 
 export async function POST(req:NextRequest){
     const sig = req.headers.get("stripe-signature")
@@ -14,7 +19,7 @@ export async function POST(req:NextRequest){
     let event;
     
     try {
-         event = stripe.webhooks.constructEvent(
+         event = getStripe().webhooks.constructEvent(
             rawBody,sig!,process.env.STRIPE_WEBHOOK_KEY!
         )
     } catch (error) {

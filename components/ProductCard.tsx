@@ -17,7 +17,7 @@ export default function UserProductCard({ product }: { product: IProduct }) {
   const [liked, setLiked] = useState(false);
 
   const openProduct = () => {
-    router.push(`/view-product/${product._id}`);
+    router.push(`/view-product/${String(product._id)}`);
   };
 
   const next = () => setCurrent((prev) => (prev + 1) % images.length);

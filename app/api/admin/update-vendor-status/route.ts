@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
 import connectDb from "@/lib/connectDb";
+import { sendVendorStatusEmail } from "@/lib/mailer";
+import { enqueueVendorApprovalEmail } from "@/lib/queue";
 
 import User from "@/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
@@ -54,6 +56,30 @@ export async function POST(req: NextRequest) {
       vendor.verificationStatus = "rejected";
       vendor.isApproved = false;
       vendor.rejectedReason = rejectedReason || "Rejected by Admin";
+    }
+
+    if (status === "approved" || status === "rejected") {
+      const emailPayload = {
+        email: vendor.email,
+        name: vendor.name,
+        shopName: vendor.shopName,
+        status,
+        rejectedReason: vendor.rejectedReason,
+        sendDirectly: true,
+      };
+
+      try {
+        await sendVendorStatusEmail(emailPayload);
+        console.log("[ROUTE] Direct vendor status email sent", { status, email: vendor.email });
+      } catch (directEmailError) {
+        console.error("Direct vendor status email failed", directEmailError);
+      }
+
+      try {
+        await enqueueVendorApprovalEmail(emailPayload);
+      } catch (emailError) {
+        console.error("Failed to queue vendor status email", emailError);
+      }
     }
 
     await vendor.save();

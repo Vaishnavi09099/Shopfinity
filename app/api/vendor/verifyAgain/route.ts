@@ -16,9 +16,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { shopName, businessAddress, gstNumber } = await req.json();
+    const { shopName, shopAddress, gstNumber } = await req.json();
 
-    if (!shopName || !businessAddress || !gstNumber) {
+    if (!shopName || !shopAddress || !gstNumber) {
       return NextResponse.json(
         { message: "All fields are required" },
         { status: 400 }
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       { email: session.user.email },
       {
         shopName,
-        businessAddress,
+        shopAddress,
         gstNumber,
         verificationStatus: "pending",
         rejectedReason: null,

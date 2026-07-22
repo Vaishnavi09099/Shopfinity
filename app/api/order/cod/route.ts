@@ -5,6 +5,7 @@ import Order from "@/models/order.model";
 import Product from "@/models/product.model";
 import User from "@/models/user.model";
 import connectDb from "@/lib/connectDb";
+import { enqueueOrderStatusEmail } from "@/lib/queue";
 
 export async function POST(req: NextRequest) {
   try {
@@ -152,6 +153,17 @@ export async function POST(req: NextRequest) {
     user.orders.push(order._id);
 
     await user.save();
+
+    try {
+      await enqueueOrderStatusEmail({
+        email: user.email,
+        name: address.name || user.name || "Customer",
+        orderId: order._id.toString(),
+        status: "pending",
+      });
+    } catch (emailError) {
+      console.error("Failed to queue order status email", emailError);
+    }
 
     return NextResponse.json(
       {

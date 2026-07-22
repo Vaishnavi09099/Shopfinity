@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     await connectDb();
 
-    const { orderId } = await req.json();
+    const { orderId, reason } = await req.json();
 
     if (!orderId) {
       return NextResponse.json(
@@ -17,7 +17,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const order = await Order.findById(orderId);
+    if (!reason || typeof reason !== "string" || !reason.trim()) {
+      return NextResponse.json(
+        { message: "Return reason is required" },
+        { status: 400 }
+      );
+    }
+
+   
+    const order = await Order.findById(orderId).populate("buyer");
 
     if (!order) {
       return NextResponse.json(
@@ -26,9 +34,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    
-    order.orderStatus = "cancelled";
-    order.cancelledAt = new Date();
+    if (order.orderStatus !== "delivered") {
+      return NextResponse.json(
+        { message: "Only delivered orders can be returned" },
+        { status: 400 }
+      );
+    }
+
+    order.orderStatus = "return_requested";
+    order.returnReason = reason.trim();
+    order.rejectionReason = null;
 
     await order.save();
 
@@ -39,22 +54,25 @@ export async function POST(req: NextRequest) {
           email,
           name: order.address?.name || (order as any).buyer?.name || "Customer",
           orderId: order._id.toString(),
-          status: "cancelled",
+          status: "return_requested",
         });
       } catch (emailError) {
-        console.error("Failed to queue cancelled order email", emailError);
+        console.error("Failed to queue return request email", emailError);
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Order cancelled successfully",
-      order,
-    });
-  } catch (error) {
-    console.error("Cancel order error:", error);
     return NextResponse.json(
-      { message: "Failed to cancel order" },
+      {
+        success: true,
+        message: "Return request received",
+        order,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Request return error:", error);
+    return NextResponse.json(
+      { message: "Failed to request return" },
       { status: 500 }
     );
   }

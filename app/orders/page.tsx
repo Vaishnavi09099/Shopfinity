@@ -23,6 +23,9 @@ export default function OrdersPage() {
   const [localOrders, setLocalOrders] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [trackOrderModal, setTrackOrderModal] = useState<any | null>(null);
+  const [returnModalOrder, setReturnModalOrder] = useState<any | null>(null);
+  const [returnReason, setReturnReason] = useState("");
+  const [returnLoading, setReturnLoading] = useState(false);
 
   // UI-only state (search + filter)
   const [searchText, setSearchText] = useState("");
@@ -149,29 +152,64 @@ export default function OrdersPage() {
     return deliveredAt;
   };
 
-  const handleReturnOrder = async (orderId: string) => {
+  const handleRequestReturn = async (orderId: string) => {
+    setReturnModalOrder(localOrders.find((o) => o._id === orderId));
+    setReturnReason("");
+  };
+
+  const submitReturnRequest = async () => {
+    if (!returnModalOrder) return;
+    if (!returnReason.trim()) {
+      alert("Please provide a reason for the return request.");
+      return;
+    }
+
     try {
-      const res = await axios.post("/api/order/return", { orderId });
+      setReturnLoading(true);
+      const res = await axios.post("/api/order/request-return", {
+        orderId: returnModalOrder._id,
+        reason: returnReason.trim(),
+      });
 
-      const returnedOrder = res.data.order;
-
+      const updatedOrder = res.data.order;
       const updatedOrders = localOrders.map((o: any) =>
-        o._id === orderId
+        o._id === returnModalOrder._id
           ? {
-            ...o,
-            orderStatus: "returned",
-            returnedAmount: returnedOrder.returnedAmount,
-          }
+              ...o,
+              orderStatus: updatedOrder.orderStatus,
+              returnReason: updatedOrder.returnReason,
+              rejectionReason: updatedOrder.rejectionReason,
+            }
           : o
       );
 
-      alert(`Order Returned. Refund ₹${returnedOrder.returnedAmount}`);
-
-      setSelectedOrder(null);
       setLocalOrders(updatedOrders);
       dispatch(setAllOrderData(updatedOrders));
+      if (selectedOrder?._id === returnModalOrder._id) {
+        setSelectedOrder({ ...selectedOrder, ...updatedOrder });
+      }
+      setReturnModalOrder(null);
+      setReturnReason("");
+      alert("Return request submitted successfully. Our team will review it shortly.");
     } catch (error: any) {
-      alert(error?.response?.data?.message || "Return failed");
+      alert(error?.response?.data?.message || "Return request failed");
+    } finally {
+      setReturnLoading(false);
+    }
+  };
+
+  const getReturnActionLabel = (status: string) => {
+    switch (status) {
+      case "return_requested":
+        return "Return Requested";
+      case "return_approved":
+        return "Refund Approved";
+      case "return_rejected":
+        return "Return Rejected";
+      case "returned":
+        return "Refunded";
+      default:
+        return "Request Return";
     }
   };
 
@@ -183,30 +221,36 @@ const statusStepMap: Record<string, string> = {
   confirmed: "Confirmed",
   shipped: "Shipped",
   delivered: "Delivered",
+  return_requested: "Return Requested",
+  return_approved: "Return Approved",
+  return_rejected: "Return Rejected",
   returned: "Returned",
-
 };
 
 
   const renderTrackStep = (currentStatus: string) => {
-    const steps = [ "pending",
-     "confirmed",
-     "shipped",
-     "delivered",
-   "returned",
+    const steps = [
+      "pending",
+      "confirmed",
+      "shipped",
+      "delivered",
+      "return_requested",
+      "return_approved",
+      "return_rejected",
+      "returned",
     ];
     const currentIndex = steps.indexOf(currentStatus);
 
     return (
-      <div className="mt-4">
-        <div className="flex items-center">
+      <div className="mt-4 overflow-hidden">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           {steps.map((status, i) => {
             const reached = currentIndex >= i;
             const isLast = i === steps.length - 1;
 
             return (
               <React.Fragment key={status}>
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center min-w-[76px]">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ${
                       reached
@@ -216,14 +260,14 @@ const statusStepMap: Record<string, string> = {
                   >
                     {reached ? <FiCheckCircle size={16} /> : i + 1}
                   </div>
-                  <div className="text-[11px] mt-2 text-gray-500 capitalize whitespace-nowrap">
+                  <div className="text-[11px] mt-2 text-gray-500 capitalize text-center">
                     {statusStepMap[status]}
                   </div>
                 </div>
 
                 {!isLast && (
                   <div
-                    className={`flex-1 h-[3px] mx-1 rounded-full ${
+                    className={`h-1.5 min-w-[30px] flex-1 rounded-full ${
                       currentIndex > i
                         ? "bg-gradient-to-r from-orange-500 to-purple-600"
                         : "bg-gray-200"
@@ -269,6 +313,12 @@ const statusStepMap: Record<string, string> = {
         return { label: "Delivered", cls: "bg-green-100 text-green-700", icon: <FiCheckCircle size={14} /> };
       case "cancelled":
         return { label: "Cancelled", cls: "bg-red-100 text-red-600", icon: null };
+      case "return_requested":
+        return { label: "Return Requested", cls: "bg-amber-100 text-amber-700", icon: null };
+      case "return_approved":
+        return { label: "Return Approved", cls: "bg-sky-100 text-sky-700", icon: null };
+      case "return_rejected":
+        return { label: "Return Rejected", cls: "bg-rose-100 text-rose-700", icon: null };
       case "returned":
         return { label: "Returned", cls: "bg-yellow-100 text-yellow-700", icon: null };
       case "confirmed":
@@ -660,16 +710,27 @@ selectedOrder.orderStatus === "delivered" ? (
 
           {eligible && (
             <button
-              onClick={() => handleReturnOrder(selectedOrder._id)}
+              onClick={() => handleRequestReturn(selectedOrder._id)}
               className="mx-3 px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600"
             >
-              Return
+              Request Return
             </button>
           )}
         </div>
       );
     });
   })()
+) : ["return_requested", "return_approved", "return_rejected"].includes(selectedOrder.orderStatus) ? (
+  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+    <div className="font-semibold">{getReturnActionLabel(selectedOrder.orderStatus)}</div>
+    <div className="text-xs mt-1">
+      {selectedOrder.orderStatus === "return_requested"
+        ? "Your return request is under review."
+        : selectedOrder.orderStatus === "return_approved"
+          ? "Your return has been approved and refund processing is underway."
+          : "Your return request was rejected. Please contact support for help."}
+    </div>
+  </div>
 ) : (
   <button
     disabled={isCancelDisabled(selectedOrder)}
@@ -683,6 +744,55 @@ selectedOrder.orderStatus === "delivered" ? (
     Cancel Order
   </button>
 )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* ---------------------- */}
+        {/* RETURN REQUEST MODAL */}
+        {/* ---------------------- */}
+        <AnimatePresence>
+          {returnModalOrder && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setReturnModalOrder(null)}
+              />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="relative z-10 w-full max-w-lg bg-white/95 backdrop-blur-md border border-white/60 p-6 rounded-3xl shadow-2xl"
+              >
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Return Request</h2>
+                <p className="text-sm text-gray-500 mb-4">
+                  Please tell us why you’d like to return order <strong>#{String(returnModalOrder._id).slice(-8)}</strong>.
+                </p>
+
+                <textarea
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  rows={5}
+                  className="w-full border border-gray-200 rounded-3xl p-4 text-sm text-gray-700 outline-none focus:border-purple-400 transition-colors"
+                  placeholder="Enter return reason"
+                />
+
+                <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-end">
+                  <button
+                    onClick={() => setReturnModalOrder(null)}
+                    className="w-full sm:w-auto px-4 py-3 rounded-2xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={submitReturnRequest}
+                    disabled={returnLoading}
+                    className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-purple-600 text-white font-medium hover:bg-purple-700 transition disabled:opacity-60"
+                  >
+                    {returnLoading ? "Submitting..." : "Submit Return Request"}
+                  </button>
                 </div>
               </motion.div>
             </div>

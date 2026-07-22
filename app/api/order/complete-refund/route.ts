@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId).populate("buyer");
 
     if (!order) {
       return NextResponse.json(
@@ -26,9 +26,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    
-    order.orderStatus = "cancelled";
-    order.cancelledAt = new Date();
+    if (order.orderStatus !== "return_approved") {
+      return NextResponse.json(
+        { message: "Return must be approved before refund can be completed" },
+        { status: 400 }
+      );
+    }
+
+    let returnedAmount = 0;
+
+    for (const item of order.products) {
+      returnedAmount += item.price * item.quantity;
+    }
+
+    order.orderStatus = "returned";
+    order.returnedAmount = returnedAmount;
+    order.refundedAt = new Date();
 
     await order.save();
 
@@ -39,22 +52,26 @@ export async function POST(req: NextRequest) {
           email,
           name: order.address?.name || (order as any).buyer?.name || "Customer",
           orderId: order._id.toString(),
-          status: "cancelled",
+          status: "returned",
         });
       } catch (emailError) {
-        console.error("Failed to queue cancelled order email", emailError);
+        console.error("Failed to queue refund completion email", emailError);
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Order cancelled successfully",
-      order,
-    });
-  } catch (error) {
-    console.error("Cancel order error:", error);
     return NextResponse.json(
-      { message: "Failed to cancel order" },
+      {
+        success: true,
+        message: "Refund completed",
+        returnedAmount,
+        order,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Complete refund error:", error);
+    return NextResponse.json(
+      { message: "Failed to complete refund" },
       { status: 500 }
     );
   }
