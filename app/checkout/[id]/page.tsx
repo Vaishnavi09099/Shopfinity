@@ -98,30 +98,38 @@ export default function CheckoutPage() {
 
   const goToReview = () => setStep(3);
 
-  const handlePlaceOrder = async () => {
-    const finalMode = paymentMode === "cod" ? "cod" : "stripe";
+const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
-    const payload = {
-      productId,
-      quantity: item.quantity,
-      address: { name, phone, address, city, pincode },
-      amount: finalTotal,
-      deliveryCharge,
-      serviceCharge,
-    };
+const handlePlaceOrder = async () => {
+  if (isPlacingOrder) return; // ✅ dusri click ko turant block karo
 
-    try {
-      if (finalMode === "cod") {
-        await axios.post("/api/order/cod", payload);
-        router.replace("/orders");
-      } else {
-        const res = await axios.post("/api/order/online-pay", payload);
-        window.location.href = res.data.url;
-      }
-    } catch (err: any) {
-      alert(err?.response?.data?.message || "Checkout failed");
-    }
+  const finalMode = paymentMode === "cod" ? "cod" : "stripe";
+
+  const payload = {
+    productId,
+    quantity: item.quantity,
+    address: { name, phone, address, city, pincode },
+    amount: finalTotal,
+    deliveryCharge,
+    serviceCharge,
   };
+
+  setIsPlacingOrder(true);
+
+  try {
+    if (finalMode === "cod") {
+      await axios.post("/api/order/cod", payload);
+      router.replace("/orders");
+    } else {
+      const res = await axios.post("/api/order/online-pay", payload);
+      window.location.href = res.data.url;
+    }
+  } catch (err: any) {
+    console.error("Order placement error:", err);
+    alert(err?.response?.data?.message || "Checkout failed");
+    setIsPlacingOrder(false); // ✅ sirf error pe reset karo, success pe navigate hi ho raha hai
+  }
+};
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-orange-100 via-pink-50 to-purple-200 px-4 pt-24 pb-16">
@@ -310,15 +318,19 @@ export default function CheckoutPage() {
                     <p>{name}, {address}, {city} - {pincode}</p>
                     <p>{phone}</p>
                   </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handlePlaceOrder}
-                    className="w-full bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 text-white font-bold text-base py-3 rounded-2xl shadow-md"
-                  >
-                    {paymentMode === "cod" ? "Place Order" : "Proceed to Secure Payment"}
-                  </motion.button>
+<motion.button
+  whileHover={{ scale: isPlacingOrder ? 1 : 1.01 }}
+  whileTap={{ scale: isPlacingOrder ? 1 : 0.98 }}
+  onClick={handlePlaceOrder}
+  disabled={isPlacingOrder}
+  className="w-full bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 text-white font-bold text-base py-3 rounded-2xl shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+>
+  {isPlacingOrder
+    ? "Placing order..."
+    : paymentMode === "cod"
+    ? "Place Order"
+    : "Proceed to Secure Payment"}
+</motion.button>
                 </motion.div>
               )}
             </AnimatePresence>
