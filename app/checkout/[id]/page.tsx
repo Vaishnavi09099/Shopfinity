@@ -42,7 +42,10 @@ export default function CheckoutPage() {
   const [pincode, setPincode] = useState("");
 
   // "card" | "upi" -> maps to stripe, "cod" -> maps to cod
-  const [paymentMode, setPaymentMode] = useState<"cod" |"stripe">("cod");
+  const [paymentMode, setPaymentMode] = useState<"cod" | "stripe">("cod");
+
+  // ✅ FIX: ye hook ab top-level pe hai, kisi return ke baad nahi
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   useEffect(() => {
     if (!productId) return;
@@ -98,38 +101,36 @@ export default function CheckoutPage() {
 
   const goToReview = () => setStep(3);
 
-const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const handlePlaceOrder = async () => {
+    if (isPlacingOrder) return; // ✅ dusri click ko turant block karo
 
-const handlePlaceOrder = async () => {
-  if (isPlacingOrder) return; // ✅ dusri click ko turant block karo
+    const finalMode = paymentMode === "cod" ? "cod" : "stripe";
 
-  const finalMode = paymentMode === "cod" ? "cod" : "stripe";
+    const payload = {
+      productId,
+      quantity: item.quantity,
+      address: { name, phone, address, city, pincode },
+      amount: finalTotal,
+      deliveryCharge,
+      serviceCharge,
+    };
 
-  const payload = {
-    productId,
-    quantity: item.quantity,
-    address: { name, phone, address, city, pincode },
-    amount: finalTotal,
-    deliveryCharge,
-    serviceCharge,
-  };
+    setIsPlacingOrder(true);
 
-  setIsPlacingOrder(true);
-
-  try {
-    if (finalMode === "cod") {
-      await axios.post("/api/order/cod", payload);
-      router.replace("/orders");
-    } else {
-      const res = await axios.post("/api/order/online-pay", payload);
-      window.location.href = res.data.url;
+    try {
+      if (finalMode === "cod") {
+        await axios.post("/api/order/cod", payload);
+        router.replace("/orders");
+      } else {
+        const res = await axios.post("/api/order/online-pay", payload);
+        window.location.href = res.data.url;
+      }
+    } catch (err: any) {
+      console.error("Order placement error:", err);
+      alert(err?.response?.data?.message || "Checkout failed");
+      setIsPlacingOrder(false); // ✅ sirf error pe reset karo, success pe navigate hi ho raha hai
     }
-  } catch (err: any) {
-    console.error("Order placement error:", err);
-    alert(err?.response?.data?.message || "Checkout failed");
-    setIsPlacingOrder(false); // ✅ sirf error pe reset karo, success pe navigate hi ho raha hai
-  }
-};
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-orange-100 via-pink-50 to-purple-200 px-4 pt-24 pb-16">
@@ -253,12 +254,10 @@ const handlePlaceOrder = async () => {
                     selected={paymentMode === "stripe"}
                     onClick={() => setPaymentMode("stripe")}
                     icon={<FaStripe className="w-5 h-5 text-white" />}
-                       iconBg="bg-blue-400"
+                    iconBg="bg-blue-400"
                     title="Stripe"
                     subtitle="Pay Online for hazzle free delivery"
                   />
-
-                 
 
                   <PaymentOption
                     selected={paymentMode === "cod"}
@@ -269,7 +268,6 @@ const handlePlaceOrder = async () => {
                     subtitle="Pay when your order arrives"
                     disabled={codDisabled}
                   />
-
 
                   <motion.button
                     whileHover={{ scale: 1.01 }}
@@ -309,8 +307,6 @@ const handlePlaceOrder = async () => {
                     <p className="font-bold text-gray-900">₹{productsTotal}</p>
                   </div>
 
-               
-
                   <div className="h-px bg-gray-100" />
 
                   <div className="text-sm text-gray-500">
@@ -318,19 +314,20 @@ const handlePlaceOrder = async () => {
                     <p>{name}, {address}, {city} - {pincode}</p>
                     <p>{phone}</p>
                   </div>
-<motion.button
-  whileHover={{ scale: isPlacingOrder ? 1 : 1.01 }}
-  whileTap={{ scale: isPlacingOrder ? 1 : 0.98 }}
-  onClick={handlePlaceOrder}
-  disabled={isPlacingOrder}
-  className="w-full bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 text-white font-bold text-base py-3 rounded-2xl shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
->
-  {isPlacingOrder
-    ? "Placing order..."
-    : paymentMode === "cod"
-    ? "Place Order"
-    : "Proceed to Secure Payment"}
-</motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: isPlacingOrder ? 1 : 1.01 }}
+                    whileTap={{ scale: isPlacingOrder ? 1 : 0.98 }}
+                    onClick={handlePlaceOrder}
+                    disabled={isPlacingOrder}
+                    className="w-full bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 text-white font-bold text-base py-3 rounded-2xl shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isPlacingOrder
+                      ? "Placing order..."
+                      : paymentMode === "cod"
+                      ? "Place Order"
+                      : "Proceed to Secure Payment"}
+                  </motion.button>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -340,8 +337,6 @@ const handlePlaceOrder = async () => {
           <div className="space-y-4">
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
               <h2 className="text-lg font-extrabold text-gray-900 mb-4">Order Summary</h2>
-
-            
 
               <div className="space-y-2 text-sm text-gray-500">
                 <div className="flex justify-between">
@@ -387,13 +382,13 @@ const handlePlaceOrder = async () => {
       </div>
 
       {/* Floating animated bag bottom-right */}
-<motion.div
-  animate={{ y: [0, -20, 0] }}
-  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-  className="absolute bottom-6 right-6 opacity-20 pointer-events-none"
->
-  <img className="w-40 h-40" src="/favicon.ico" alt="bag" />
-</motion.div>
+      <motion.div
+        animate={{ y: [0, -20, 0] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-6 right-6 opacity-20 pointer-events-none"
+      >
+        <img className="w-40 h-40" src="/favicon.ico" alt="bag" />
+      </motion.div>
     </div>
   );
 }
