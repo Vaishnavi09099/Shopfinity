@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
 import connectDb from "@/lib/connectDb";
+import { sendProductStatusEmail } from "@/lib/mailer";
+import { enqueueProductApprovalEmail } from "@/lib/queue";
 
 import Product from "@/models/product.model";
 import User from "@/models/user.model";
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ✅ Find Product
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).populate("vendor");
 
     if (!product) {
       return NextResponse.json(
@@ -46,19 +48,50 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const vendor = await User.findById(product.vendor);
+
     // ✅ UPDATE LOGIC (SAME AS VENDOR)
     if (status === "approved") {
       product.verificationStatus = "approved";
-               
+      product.isActive = true;
       product.approvedAt = new Date();
       product.rejectedReason = undefined;
     }
 
     if (status === "rejected") {
       product.verificationStatus = "rejected";
-                  
-      product.rejectedReason =
-        rejectedReason || "Rejected by Admin";
+      product.isActive = false;
+      product.rejectedReason = rejectedReason || "Rejected by Admin";
+    }
+
+    if (status === "approved" || status === "rejected") {
+      const emailPayload = {
+        email: vendor?.email,
+        name: vendor?.name || "Vendor",
+        productName: product.title,
+        status,
+        rejectedReason: product.rejectedReason,
+        sendDirectly: true,
+      };
+
+      if (vendor?.email) {
+        try {
+          await sendProductStatusEmail(emailPayload);
+          console.log("[ROUTE] Direct product status email sent", {
+            status,
+            email: vendor.email,
+            productId,
+          });
+        } catch (directEmailError) {
+          console.error("Direct product status email failed", directEmailError);
+        }
+
+        try {
+          await enqueueProductApprovalEmail(emailPayload);
+        } catch (emailError) {
+          console.error("Failed to queue product status email", emailError);
+        }
+      }
     }
 
     await product.save();

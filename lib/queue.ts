@@ -1,7 +1,11 @@
 
 import { Queue } from "bullmq";
 import { redisConnection } from "@/lib/redis";
-import { sendOrderStatusEmail, sendVendorStatusEmail } from "@/lib/mailer";
+import {
+  sendOrderStatusEmail,
+  sendProductStatusEmail,
+  sendVendorStatusEmail,
+} from "@/lib/mailer";
 import "./worker";
 
 export type VendorApprovalEmailPayload = {
@@ -30,11 +34,24 @@ export type OrderStatusEmailPayload = {
   sendDirectly?: boolean;
 };
 
+export type ProductApprovalEmailPayload = {
+  email: string;
+  name: string;
+  productName?: string;
+  status: "approved" | "rejected";
+  rejectedReason?: string;
+  sendDirectly?: boolean;
+};
+
 export const vendorApprovalQueue = new Queue("vendor-approval", {
   connection: redisConnection,
 });
 
 export const orderStatusQueue = new Queue("order-status", {
+  connection: redisConnection,
+});
+
+export const productApprovalQueue = new Queue("product-approval", {
   connection: redisConnection,
 });
 
@@ -56,6 +73,29 @@ export async function enqueueVendorApprovalEmail(payload: VendorApprovalEmailPay
       name: payload.name,
       shopName: payload.shopName,
       status: payload.status || "approved",
+      rejectedReason: payload.rejectedReason,
+    });
+  }
+}
+
+export async function enqueueProductApprovalEmail(payload: ProductApprovalEmailPayload) {
+  console.log("[QUEUE] Enqueuing product approval email", payload);
+
+  try {
+    const job = await productApprovalQueue.add("send-product-approval-email", payload, {
+      removeOnComplete: true,
+      removeOnFail: true,
+    });
+
+    console.log("[QUEUE] Job added to queue", { jobId: job.id });
+    return job;
+  } catch (queueError) {
+    console.error("[QUEUE] Failed to enqueue product approval email, sending directly", queueError);
+    return await sendProductStatusEmail({
+      email: payload.email,
+      name: payload.name,
+      productName: payload.productName,
+      status: payload.status,
       rejectedReason: payload.rejectedReason,
     });
   }

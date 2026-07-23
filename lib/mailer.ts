@@ -104,6 +104,56 @@ export async function sendVendorApprovalEmail(payload: {
   });
 }
 
+/**
+ * Product status email (approved or rejected)
+ */
+export async function sendProductStatusEmail({
+  email,
+  name,
+  productName,
+  status,
+  rejectedReason,
+}: {
+  email: string;
+  name: string;
+  productName?: string;
+  status: "approved" | "rejected";
+  rejectedReason?: string;
+}) {
+  const isRejected = status === "rejected";
+
+  const subject = isRejected
+    ? "Your product request was rejected"
+    : "Your product has been approved";
+
+  const title = isRejected
+    ? "Product request update ⚠️"
+    : "Product approval confirmed ✅";
+
+  const body = isRejected
+    ? `Your product <strong>${productName || "submitted product"}</strong> was rejected by the admin.${rejectedReason ? `<br/><br/><strong>Reason:</strong> ${rejectedReason}` : ""}`
+    : `Your product <strong>${productName || "submitted product"}</strong> has been approved by the admin and is now live for customers.`;
+
+  const response = await transporter.sendMail({
+    from: `"Shopfinity Team" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2>${title}</h2>
+        <p>Hello ${name},</p>
+        <p>${body}</p>
+        <p>${isRejected ? "You can still edit or resubmit your product after reviewing the rejection reason." : "You can now manage your product from your vendor dashboard."}</p>
+        <br/>
+        <p>Regards,<br/>Shopfinity Team</p>
+      </div>
+    `,
+  });
+
+  console.log(`[GMAIL RESPONSE] product-status:${status}`, response.messageId);
+  return response;
+}
+
 export async function sendOrderStatusEmail({
   email,
   name,

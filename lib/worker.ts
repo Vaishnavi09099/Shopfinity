@@ -1,7 +1,15 @@
 import { Worker } from "bullmq";
 import { redisConnection } from "@/lib/redis";
-import { sendOrderStatusEmail, sendVendorStatusEmail } from "@/lib/mailer";
-import type { OrderStatusEmailPayload, VendorApprovalEmailPayload } from "@/lib/queue";
+import {
+  sendOrderStatusEmail,
+  sendProductStatusEmail,
+  sendVendorStatusEmail,
+} from "@/lib/mailer";
+import type {
+  OrderStatusEmailPayload,
+  ProductApprovalEmailPayload,
+  VendorApprovalEmailPayload,
+} from "@/lib/queue";
 
 console.log("[WORKER] Initializing vendor approval worker");
 
@@ -88,4 +96,47 @@ orderStatusWorker.on("failed", (job, err) => {
 
 orderStatusWorker.on("completed", (job) => {
   console.log("[WORKER] Order status job completed", { jobId: job.id });
+});
+
+export const productApprovalWorker = new Worker(
+  "product-approval",
+  async (job) => {
+    const payload = job.data as ProductApprovalEmailPayload;
+    console.log("[WORKER] Processing product approval email", { jobId: job.id, data: payload });
+
+    if (payload.sendDirectly) {
+      console.log("[WORKER] Skipping product email because it was already sent directly", {
+        jobId: job.id,
+      });
+      return { sent: true, skipped: true };
+    }
+
+    try {
+      await sendProductStatusEmail({
+        email: payload.email,
+        name: payload.name,
+        productName: payload.productName,
+        status: payload.status,
+        rejectedReason: payload.rejectedReason,
+      });
+      console.log("[WORKER] Product approval email sent successfully", { jobId: job.id });
+      return { sent: true };
+    } catch (error) {
+      console.error("[WORKER] Product approval email failed", error);
+      throw error;
+    }
+  },
+  { connection: redisConnection }
+);
+
+productApprovalWorker.on("ready", () => {
+  console.log("[WORKER] Product approval worker is ready and listening");
+});
+
+productApprovalWorker.on("failed", (job, err) => {
+  console.error("[WORKER] Product approval job failed", { jobId: job?.id, data: job?.data, error: err });
+});
+
+productApprovalWorker.on("completed", (job) => {
+  console.log("[WORKER] Product approval job completed", { jobId: job.id });
 });
