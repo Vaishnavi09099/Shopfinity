@@ -5,6 +5,8 @@ import { Sora } from "next/font/google";
 import Provider from "@/Provider";
 import StoreProvider from "@/redux/StoreProvider";
 import InitUser from "@/InitUser";
+import ShopfinityAI from "@/components/ShopfinityAi";
+
 
 
 
@@ -31,6 +33,7 @@ export default function RootLayout({
           <StoreProvider >
             <InitUser />
                {children}
+                 <ShopfinityAI />
 
           </StoreProvider>
       

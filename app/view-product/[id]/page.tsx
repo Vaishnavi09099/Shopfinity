@@ -269,18 +269,6 @@ export default function ProductViewPage() {
                 </motion.div>
               </AnimatePresence>
 
-              {/* ✅ WISHLIST */}
-              <motion.button
-                whileTap={{ scale: 0.85 }}
-                onClick={() => setLiked((p) => !p)}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-md"
-              >
-                <Heart
-                  className={`w-5 h-5 transition-colors ${
-                    liked ? "fill-pink-500 text-pink-500" : "text-gray-500"
-                  }`}
-                />
-              </motion.button>
 
               {/* ✅ VERIFIED BADGE */}
               <div className="absolute top-4 left-4 flex items-center gap-1 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full text-xs font-semibold text-purple-700 shadow">

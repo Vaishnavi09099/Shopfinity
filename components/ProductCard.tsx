@@ -79,16 +79,7 @@ export default function UserProductCard({ product }: { product: IProduct }) {
 
 
 
-        {/* ✅ HEART / WISHLIST (top-right) */}
-        <button
-          onClick={toggleLike}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm"
-        >
-          <Heart
-            className={`w-4 h-4 transition-colors ${liked ? "fill-pink-500 text-pink-500" : "text-gray-500"}`}
-          />
-        </button>
-
+    
         {/* ✅ SLIDER ARROWS - only show if multiple images */}
         {images.length > 1 && (
           <>
