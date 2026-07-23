@@ -21,7 +21,7 @@ A modern, full-stack multi-vendor e-commerce platform built with Next.js 16, Rea
 - Add to cart with quantity management
 - Checkout with COD & Stripe payment options
 - Order tracking with status updates
-- Delivery OTP verification
+- Delivery OTP verification with Redis caching
 - Return & cancel order functionality
 
 ### 📦 Product Management
@@ -37,10 +37,27 @@ A modern, full-stack multi-vendor e-commerce platform built with Next.js 16, Rea
 - **Vendor Dashboard**: Products, orders, performance metrics
 - **Shopper Dashboard**: Browse, cart, orders, profile
 
-### 💬 Support
-- Real-time chat
-- AI-powered suggestions
-- Active user support
+### 💬 AI-Powered Support
+- Real-time AI chatbot powered by LangChain & Langraph
+- Gemini 2.5 Flash LLM integration
+- Order status lookup
+- Product search across vendors
+- Cart cost estimation
+- Conversational, user-friendly assistance
+
+### 📧 Asynchronous Email Service
+- BullMQ-based job queue for reliable email delivery
+- Order status update emails (pending, confirmed, shipped, delivered, etc.)
+- Vendor approval/rejection emails
+- Product approval/rejection emails
+- Fallback to direct email if queue fails
+- Worker-based email processing with job monitoring
+
+### 📍 OTP & Security
+- Redis-based OTP caching for delivery verification
+- Configurable OTP expiry (default 10 minutes)
+- Secure OTP validation flow
+- Redis persistence for reliability
 
 ---
 
@@ -54,9 +71,12 @@ A modern, full-stack multi-vendor e-commerce platform built with Next.js 16, Rea
 | **Auth** | NextAuth.js 5 |
 | **Payments** | Stripe |
 | **File Storage** | Cloudinary |
-| **Email** | Nodemailer |
+| **Email Service** | Nodemailer with BullMQ queue |
+| **Job Queue** | BullMQ (with Redis backend) |
+| **Caching & OTP** | Redis (ioredis) |
+| **AI Chatbot** | LangChain, Langraph, Google Generative AI (Gemini) |
 | **State Management** | Redux Toolkit + React Redux |
-| **Other** | Axios, dotenv |
+| **Other** | Axios, Zod, dotenv |
 
 ---
 
@@ -101,8 +121,11 @@ A modern, full-stack multi-vendor e-commerce platform built with Next.js 16, Rea
    RESEND_API_KEY=your_resend_api_key
    RESEND_FROM_EMAIL=you@yourdomain.com
 
-   # Redis
+   # Redis (for BullMQ queue, OTP caching, and chatbot sessions)
    REDIS_URL=redis://127.0.0.1:6379
+
+   # Google Generative AI (for AI Chatbot)
+   GEMINI_API_KEY=your_gemini_api_key
    ```
 
 4. **Run the development server**
@@ -110,7 +133,12 @@ A modern, full-stack multi-vendor e-commerce platform built with Next.js 16, Rea
    npm run dev
    ```
 
-5. **Open your browser**
+5. **Start Redis server** (if running locally)
+   ```bash
+   redis-server
+   ```
+
+6. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ---
@@ -129,13 +157,83 @@ shopfinity/
 │   ├── User/             # Shopper components
 │   └── Vendor/           # Vendor components
 ├── hooks/                # Custom React hooks
-├── lib/                  # Utility functions (DB, Cloudinary, Mailer)
-├── models/               # Mongoose models (User, Product, Order)
-├── public/               # Static assets
-├── redux/                # Redux store & slices
-├── auth.ts               # NextAuth configuration
+├── lib/                  # Utility functions
+│   ├── ai/              # AI agent & tools (LangChain)
+│   │   ├── agent.ts     # Shopfinity AI agent setup
+│   │   └── tools.ts     # LangChain tools (order status, search, cart)
+│   ├── queue.ts         # BullMQ queue setup & enqueueing functions
+│   ├── worker.ts        # BullMQ workers for async email processing
+│   ├── redis.ts         # Redis connection (OTP caching & queue)
+│   ├── mailer.ts        # Email templates & Nodemailer config
+│   ├── connectDb.ts     # MongoDB connection
+│   └── cloudinary.ts    # Cloudinary upload utilities
+├── models/              # Mongoose models (User, Product, Order)
+├── public/              # Static assets
+├── redux/               # Redux store & slices
+├── auth.ts              # NextAuth configuration
 └── package.json
 ```
+
+---
+
+## 🤖 AI Chatbot Details
+
+The AI chatbot (`Shopfinity AI`) is powered by **LangChain** with **Google Generative AI (Gemini 2.5 Flash)**.
+
+### Capabilities:
+- **Order Status Lookup**: Get current order status, payment info, and items
+- **Product Search**: Search products across vendors by name or category
+- **Cart Estimation**: Calculate total cost for items before checkout
+- **User-Friendly**: Conversational responses, never reveals other users' data
+
+### Architecture:
+- Agent-based system using LangChain's `createAgent()` function
+- Equipped with three specialized tools: `get_order_status`, `search_products`, `calculate_cart_total`
+- Runs per-user session with Gemini model at 0.3 temperature for consistency
+
+---
+
+## 📧 Email Queue System (BullMQ)
+
+Shopfinity uses **BullMQ** (Redis-backed) for reliable, asynchronous email delivery.
+
+### Three Email Queues:
+1. **Vendor Approval Queue**: Sends emails when vendors are approved/rejected
+2. **Product Approval Queue**: Sends emails when products are approved/rejected
+3. **Order Status Queue**: Sends order updates (pending, confirmed, shipped, delivered, returned, etc.)
+
+### How It Works:
+1. When an event occurs (e.g., order shipped), the system enqueues a job
+2. BullMQ workers process jobs asynchronously from Redis
+3. Emails are sent via Nodemailer with HTML templates
+4. Jobs are automatically removed on success or retry on failure
+5. Fallback: If queue fails, emails are sent directly
+
+### Worker Monitoring:
+- Logs job processing with detailed job IDs
+- Tracks job completion, failures, and skipped emails
+- Automatic retry mechanisms for failed jobs
+
+---
+
+## 🔐 OTP & Redis Caching
+
+Delivery OTP verification uses **Redis** for fast, secure temporary storage.
+
+### Flow:
+1. Admin marks order as "shipped"
+2. OTP is generated (4-digit random number)
+3. OTP is stored in Redis with 10-minute expiry: `otp:{orderId} → {otp}`
+4. Buyer receives OTP via email
+5. Buyer enters OTP for delivery confirmation
+6. OTP is validated and deleted from Redis
+7. Order marked as "delivered"
+
+### Benefits:
+- Sub-millisecond lookups
+- Automatic expiry (no manual cleanup)
+- Secure, temporary storage (not in database)
+- Works seamlessly with BullMQ for email delivery
 
 ---
 
